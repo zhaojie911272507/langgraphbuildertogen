@@ -1,0 +1,98 @@
+/* This is an automatically generated file. Do not modify it.
+
+This file was generated using `langgraph-gen` version {{ version }}.
+To regenerate this file, run `langgraph-gen` with the source `YAML` file as an argument.
+
+Usage:
+
+1. Add the generated file to your project.
+2. Create a new agent using the stub.
+
+```typescript
+{% macro standard_edge(edge) %}
+    {% if edge == "__end__" %}END{% elif edge == "__start__" %}START{% else %}"{{ edge }}"{% endif %}
+{% endmacro %}
+{% if stub_module %}
+import { {{ stub_name }} } from "{{ stub_module }}"
+{% else %}
+import { {{ stub_name }} } from "[some_path]";
+{% endif %}
+
+
+const StateAnnotation = Annotation.Root({
+    // Define your state properties here
+    foo: Annotation<string>(),
+});
+
+const agent = CustomAgentStub(Annotation.Root({ foo: Annotation<string>() }), {
+    {%  for node in nodes  %}
+    {{ node.id }}: (state) => console.log("In node: {{ node.name }}"),
+    {%  endfor  %}
+    {% for edge in edges %}
+    {% if edge.condition is defined %}
+    {{ edge.condition }}: (state) => {
+        console.log("In condition: {{ edge.condition }}");
+        throw new Error("Implement me. Returns one of the paths.");
+    },
+    {% endif %}
+    {% endfor %}
+});
+
+const compiled_agent = agent.compile();
+console.log(await compiled_agent.invoke({ foo: "bar" }));
+```
+
+*/
+import {
+    StateGraph,
+    START,
+    END,
+    type AnnotationRoot,
+} from "@langchain/langgraph";
+
+type AnyAnnotationRoot = AnnotationRoot<any>;
+
+export function {{ stub_name }}<TAnnotation extends AnyAnnotationRoot>(
+  stateAnnotation: TAnnotation,
+  impl: {
+    {%  for node in nodes  %}
+    {{ node.id }}: (state: TAnnotation["State"]) => TAnnotation["Update"],
+    {%  endfor  %}
+    {% for edge in edges %}
+    {% if edge.condition is defined %}
+    {{ edge.condition }}: (state: TAnnotation["State"]) => string,
+    {% endif %}
+    {% endfor %}
+  }
+) {
+  return new StateGraph(stateAnnotation)
+    {% for node in nodes %}
+    .addNode("{{ node.name }}", impl.{{ node.id }})
+    {% endfor %}
+    {% if entrypoint %}
+    .addEdge(START, "{{ entrypoint }}")
+    {% endif %}
+    {% for edge in edges %}
+    {% if edge.condition is defined %}
+    .addConditionalEdges(
+        {{ standard_edge(edge.from) }},
+        impl.{{ edge.condition }},
+        {% if edge.paths is mapping %}
+        {
+        {% for key, value in edge.paths.items() %}
+            {{ key }}: {{ standard_edge(value) }},
+        {% endfor %}
+        }
+        {% else %}
+        [
+        {% for path in edge.paths %}
+            {{ standard_edge(path) }},
+        {% endfor %}
+        ]
+        {% endif %}
+    )
+    {% else %}
+    .addEdge({{ standard_edge(edge.from) }}, {{ standard_edge(edge.to) }})
+    {% endif %}
+    {% endfor %}
+}

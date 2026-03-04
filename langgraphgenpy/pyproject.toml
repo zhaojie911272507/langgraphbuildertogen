@@ -1,0 +1,26 @@
+[project]
+name = "langgraph-gen"
+version = "0.0.6"
+description = "Genenerate code stubs for langgraph agents."
+readme = "README.md"
+requires-python = ">=3.9"
+license = "MIT"
+dependencies = [
+    "jinja2>=3.1.5",
+    "langgraph>=0.2.74",
+    "pyyaml>=6.0.2",
+]
+
+
+[dependency-groups]
+test = [
+    "ruff>=0.9.7",
+    "pytest-socket>=0.7.0",
+]
+
+[project.scripts]
+langgraph-gen = "langgraph_gen.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

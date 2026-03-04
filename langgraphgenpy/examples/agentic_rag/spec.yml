@@ -1,0 +1,24 @@
+# Retrieval Augmented Generation (RAG) with an agent.
+# 1. The agent has access to one or more retrieval tools to retrieve relevant information.
+# 2. The agent checks whether the retrieved information is relevant.
+#   - If not, it attempts to rewrite the query and retrieve again.
+#   - If yes, it generates the final output.
+name: AgenticRag
+entrypoint: agent
+nodes:
+  - name: agent
+  - name: retrieve
+  - name: rewrite
+  - name: generate
+edges:
+  - from: agent
+    to: retrieve
+  - from: retrieve
+    condition: is_relevant
+    paths:
+      - rewrite
+      - generate
+  - from: rewrite
+    to: agent
+  - from: generate
+    to: __end__

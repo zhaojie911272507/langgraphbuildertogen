@@ -1,0 +1,34 @@
+from typing import Type
+
+from pydantic import BaseModel
+
+# import the auto-generated stub
+## from [YOUR PACKAGE NAME] import {{ stub_name }}
+
+
+class MyState(BaseModel):
+    """Define your state schema as a Pydantic model"""
+    pass
+
+
+class {{ stub_name }}Implementation({{ stub_name }}):
+    def __init__(self) -> None:
+        """Build the underlying graph."""
+        super().__init__()
+
+    @property
+    def state_schema(self) -> Type[BaseModel]:
+        """Define your state schema as a Pydantic model"""
+        return MyState
+
+    {% for node in nodes %}
+    def {{ node.name }}(self, state: dict) -> dict:
+        """{% if node.description %}{{ node.description }}{% else %}Node: {{ node.name }}{% endif %}"""
+        raise NotImplementedError("Implement me.")
+
+    {% endfor %}
+    {% for edge in edges if edge.condition is defined %}
+    def {{ edge.condition }}(self, state: dict) -> str:
+        """Condition for {{ edge.from }} → {{ edge.paths|join(', ') }}"""
+        raise NotImplementedError("Implement me.")
+    {% endfor %}

@@ -1,0 +1,151 @@
+# This file was generated using `langgraph-gen` version {{ version }}.
+from typing import Callable, Set
+
+from langgraph.constants import START
+from langgraph.graph import StateGraph
+from typing_extensions import TypedDict
+
+
+class StateSchema(TypedDict):
+    # Define your attributes here
+    pass
+
+
+SPEC = {
+    "entrypoint": "{{ entrypoint }}",
+    "edges": [
+        {% for edge in edges %}
+        {
+            "from": "{{ edge.from }}",
+            {% if edge.condition is defined %}
+            "condition": "{{ edge.condition }}",
+            {% if edge.paths is mapping %}
+            "paths": {
+               {% for key, value in edge.paths.items() %}
+                "{{ key }}": "{{ value }}",
+                {% endfor %}
+            },
+            {% else %}
+            "paths": [
+                {% for path in edge.paths %}
+                "{{ path }}",
+                {% endfor %}
+            ],
+            {% endif %}
+            {% else %}
+            "to": "{{ edge.to }}",
+            {% endif %}
+        },
+        {% endfor %}
+    ]
+}
+
+
+# User defined implementations
+
+# Define the node functions
+{% for node in nodes %}
+def {{ node.name }}(state: StateSchema) -> dict:
+    """{% if node.description %}{{ node.description }}{% else %}Node: {{ node.name }}{% endif %}"""
+    print("Node: {{ node.name }}")
+    return {
+        # Add your state update logic here
+    }
+
+
+{% endfor %}
+{% for edge in edges if edge.condition is defined %}
+def {{ edge.condition }}(state: StateSchema) -> str:
+    """Condition for {{ edge.from }} → {{ edge.paths|join(', ') }}"""
+    raise NotImplementedError("Implement me.")
+
+
+{% endfor %}
+# Define a list of (node name, node function) tuples
+implementations = [
+    {% for node in nodes %}
+    ("{{ node.name }}", {{ node.name }}),
+    {% endfor %}
+    {% for edge in edges if edge.condition is defined %}
+    ("{{ edge.condition }}", {{ edge.condition }}),
+    {% endfor %}
+]
+
+
+# Declare the state graph
+builder = StateGraph(StateSchema)
+
+
+def add_to_graph(
+    state_graph: StateGraph,
+    spec: dict,
+    implementations: list[tuple[str, Callable]],
+) -> None:
+    """Add edges and implementations to the state graph, updating it in place."""
+    # Declare the state graph
+    if not isinstance(spec, dict):
+        raise TypeError(
+            f"Specification must be a top level dictionary. Found: {type(spec)}"
+        )
+
+    # Identify all node implementations by scanning the edges
+    if "edges" not in spec:
+        raise ValueError("Missing key 'edges' in spec.")
+
+    edges = spec["edges"]
+    found_nodes: Set[str] = set()
+
+    for edge in edges:
+        if "from" in edge:
+            found_nodes.add(edge["from"])
+        if "to" in edge:
+            found_nodes.add(edge["to"])
+        if "condition" in edge:
+            found_nodes.add(edge["condition"])
+        if "paths" in edge:
+            if isinstance(edge["paths"], dict):
+                found_nodes.update(edge["paths"].values())
+            elif isinstance(edge["paths"], list):
+                found_nodes.update(edge["paths"])
+            else:
+                raise TypeError(f"Invalid paths: {edge['paths']}")
+
+    # Remove the end node from the edges since it's a special case
+    found_nodes = found_nodes - {"__end__"}
+
+    nodes_by_name = {name: implementation for name, implementation in implementations}
+    found_implementations = set(nodes_by_name)
+
+    missing_implementations = found_nodes - found_implementations
+
+    if missing_implementations:
+        raise ValueError(f"Missing implementations for : {missing_implementations}")
+
+    for name, node in nodes_by_name.items():
+        state_graph.add_node(name, node)
+
+    for edge in spec["edges"]:
+        # It's a conditional edge
+        if "condition" in edge:
+            state_graph.add_conditional_edges(
+                edge["from"],
+                nodes_by_name[edge["condition"]],
+                path_map=edge["paths"] if "paths" in edge else None,
+            )
+        else:
+            # it's a directed edge
+            state_graph.add_edge(edge["from"], edge["to"])
+
+    # Set the entry point
+    state_graph.add_edge(START, spec["entrypoint"])
+
+
+# Update the state graph in place
+add_to_graph(builder, SPEC, implementations)
+
+# Compile the graph
+graph = builder.compile()
+
+# Invoke the graph
+# After you define StateSchema (above), you can invoke the graph with appropriate state
+# graph.invoke(...)

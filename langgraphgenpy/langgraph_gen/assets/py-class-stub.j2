@@ -1,0 +1,62 @@
+# This is an automatically generated file. Do not modify it.
+# This file was generated using `langgraph-gen` version {{ version }}.
+# To regenerate this file, run `langgraph-gen` with the source `YAML` file
+# as an argument.
+from abc import ABC, abstractmethod
+from typing import Type
+
+from langgraph.graph import StateGraph, END
+from pydantic import BaseModel
+
+
+class {{ class_name }}(ABC):
+    """Automatically generated stub."""
+
+    def __init__(self) -> None:
+        """Build the underlying graph."""
+        self.builder = StateGraph(self.state_schema)
+        {% for node in nodes %}
+        self.builder.add_node("{{ node.name }}", self.{{ node.name }})
+        {% endfor %}
+
+        {% for edge in edges %}
+        {% if edge.condition is defined %}
+        self.builder.add_conditional_edges(
+            "{{ edge.from }}",
+            self.{{ edge.condition }},
+            {% if edge.paths is mapping %}
+            {
+            {% for key, value in edge.paths.items() %}
+                "{{ key }}": "{{ value }}"
+            {% endfor %}
+            }
+            {% else %}
+            {% for path in edge.paths %}
+            "{{ path }}",
+            {% endfor %}
+            {% endif %}
+        )
+        {% else %}
+        self.builder.add_edge("{{ edge.from }}", {% if not edge.to %}END{%else %}"{{ edge.to }}"{% endif %})
+        {% endif %}
+        {% endfor %}
+
+        self.builder.set_entry_point("{{ entrypoint }}")
+        self.graph = self.builder.compile()
+
+    @property
+    @abstractmethod
+    def state_schema(self) -> Type[BaseModel]:
+        """Define your state schema as a Pydantic model"""
+
+    {% for node in nodes %}
+    @abstractmethod
+    def {{ node.name }}(self, state: dict) -> dict:
+        """{% if node.description %}{{ node.description }}{% else %}Node: {{ node.name }}{% endif %}"""
+
+    {% endfor %}
+    {% for edge in edges if edge.condition is defined %}
+    @abstractmethod
+    def {{ edge.condition }}(self, state: dict) -> str:
+        """Condition for {{ edge.from }} → {{ edge.paths|join(', ') }}"""
+    {% endfor %}

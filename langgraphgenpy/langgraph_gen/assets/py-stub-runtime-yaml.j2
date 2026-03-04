@@ -1,0 +1,82 @@
+# This file was generated using `langgraph-gen` version {{ version }}.
+from typing import Callable, Set
+
+import yaml
+from langgraph.constants import START
+from langgraph.graph import StateGraph
+from langgraph_gen import add_to_graph_from_yaml
+from typing_extensions import TypedDict
+
+
+class StateSchema(TypedDict):
+    # Define your attributes here
+    pass
+
+
+SPEC = """
+entrypoint: {{ entrypoint }}
+edges:
+  {% for edge in edges %}
+  - from: {{ edge.from }}
+    {% if edge.condition is defined %}
+    condition: {{ edge.condition }}
+    {% if edge.paths is mapping %}
+    paths:
+      {% for key, value in edge.paths.items() %}
+      {{ key }}: {{ value }}
+      {% endfor %}
+    {% else %}
+    paths:
+      {% for path in edge.paths %}
+      - {{ path }}
+      {% endfor %}
+    {% endif %}
+    {% else %}
+    to: {{ edge.to }}
+    {% endif %}
+  {% endfor %}
+"""
+
+# User defined implementations
+
+# Define the node functions
+{% for node in nodes %}
+def {{ node.name }}(state: StateSchema) -> dict:
+    """{% if node.description %}{{ node.description }}{% else %}Node: {{ node.name }}{% endif %}"""
+    print("Node: {{ node.name }}")
+    return {
+        # Add your state update logic here
+    }
+
+
+{% endfor %}
+{% for edge in edges if edge.condition is defined %}
+def {{ edge.condition }}(state: StateSchema) -> str:
+    """Condition for {{ edge.from }} → {{ edge.paths|join(', ') }}"""
+    raise NotImplementedError("Implement me.")
+
+
+{% endfor %}
+# Define a list of (node name, node function) tuples
+implementations = [
+    {% for node in nodes %}
+    ("{{ node.name }}", {{ node.name }}),
+    {% endfor %}
+    {% for edge in edges if edge.condition is defined %}
+    ("{{ edge.condition }}", {{ edge.condition }}),
+    {% endfor %}
+]
+
+
+# Declare the state graph
+builder = StateGraph(StateSchema)
+
+# Update the state graph in place
+add_to_graph(builder, SPEC, implementations)
+
+# Compile the graph
+graph = builder.compile()
+
+# Invoke the graph
+# After you define StateSchema (above), you can invoke the graph with appropriate state
+# graph.invoke(...)

@@ -1,0 +1,34 @@
+/* This file was generated using `langgraph-gen` version {{ version }}.
+
+This file provides a placeholder implementation for the corresponding stub.
+
+Replace the placeholder implementation with your own logic.
+*/
+import { Annotation } from "@langchain/langgraph";
+
+{% if stub_module %}
+import { {{ stub_name }} } from "{{ stub_module }}"
+{% else %}
+// Update the import path appropriately
+// import { {{ stub_name }} } from "[some_path]";
+{% endif %}
+
+const agent = {{ stub_name }}(Annotation.Root({ foo: Annotation<string>() }), {
+    {%  for node in nodes  %}
+    {{ node.id }}: (state) => {
+        console.log("In node: {{ node.name }}")
+        return {} // Add your state update logic here
+    },
+    {%  endfor  %}
+    {% for edge in edges %}
+    {% if edge.condition is defined %}
+    {{ edge.condition }}: (state) => {
+        console.log("In condition: {{ edge.condition }}");
+        throw new Error("Implement me. Returns one of the paths.");
+    },
+    {% endif %}
+    {% endfor %}
+});
+
+const compiled_agent = agent.compile();
+console.log(await compiled_agent.invoke({ foo: "bar" }));

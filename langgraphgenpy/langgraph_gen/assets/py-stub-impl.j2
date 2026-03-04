@@ -1,0 +1,55 @@
+"""This file was generated using `langgraph-gen` version {{ version }}.
+
+This file provides a placeholder implementation for the corresponding stub.
+
+Replace the placeholder implementation with your own logic.
+"""
+
+from typing_extensions import TypedDict
+
+{% if stub_module %}
+from {{ stub_module }} import {{ stub_name }}
+{% else %}
+# Update the import path
+# from [path to your stub] import {{ stub_name }}
+{% endif %}
+
+
+class SomeState(TypedDict):
+    # define your attributes here
+    foo: str
+
+
+# Define stand-alone functions
+{% for node in nodes %}
+def {{ node.id }}(state: SomeState) -> dict:
+    print("In node: {{ node.name }}")
+    return {
+        # Add your state update logic here
+    }
+
+
+{% endfor %}
+{% for edge in edges if edge.condition is defined %}
+def {{ edge.condition }}(state: SomeState) -> str:
+    print("In condition: {{ edge.condition }}")
+    raise NotImplementedError("Implement me.")
+
+
+{% endfor %}
+agent = {{ stub_name }}(
+    state_schema=SomeState,
+    impl=[
+    {% for node in nodes %}
+        ("{{ node.id }}", {{ node.id }}),
+    {% endfor %}
+    {% for edge in edges if edge.condition is defined %}
+        ("{{ edge.condition }}", {{ edge.condition }}),
+    {% endfor %}
+    ],
+)
+
+compiled_agent = agent.compile()
+
+print(compiled_agent.invoke({"foo": "bar"}))
+
