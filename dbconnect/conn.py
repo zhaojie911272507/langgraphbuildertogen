@@ -11,7 +11,7 @@ try:
         host=os.getenv("DB_HOST"),
         port=int(os.getenv("DB_PORT")),
         username=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASS"),
+        password=os.getenv("DB_PASSWORD"),
         authSource=os.getenv("DB_AUTHSOURCE")
     )
 

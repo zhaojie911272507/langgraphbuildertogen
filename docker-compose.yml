@@ -1,0 +1,46 @@
+services:
+  # LangGraph Gen - 代码生成后端 API (端口 8001)
+  langgraph-gen:
+    build:
+      context: .
+      dockerfile: Dockerfile.gen
+    container_name: langgraph-gen
+    ports:
+      - "8001:8001"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8001/health')\" || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # LangGraph Builder - 可视化设计前端 (端口 3000)
+  langgraph-builder:
+    build:
+      context: .
+      dockerfile: Dockerfile.builder
+    container_name: langgraph-builder
+    ports:
+      - "3000:3000"
+    environment:
+      - LANGGRAPH_API_URL=http://langgraph-gen:8001/api/generate
+    depends_on:
+      langgraph-gen:
+        condition: service_healthy
+
+  # MongoDB (可选，供 mongodbcon 服务使用)
+  mongodb:
+    image: mongo:7
+    container_name: langgraph-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=admin123
+    profiles:
+      - with-mongodb
+
+volumes:
+  mongodb_data:

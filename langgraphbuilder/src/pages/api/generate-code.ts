@@ -1,8 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 
-// const LANGGRAPH_API_URL = 'https://langgraph-gen-server-570601939772.us-central1.run.app/generate'
-
-const LANGGRAPH_API_URL = 'http://localhost:8001/api/generate'
+// 支持环境变量配置，Docker 部署时使用服务名 langgraph-gen
+const LANGGRAPH_API_URL = process.env.LANGGRAPH_API_URL || 'http://localhost:8001/api/generate'
 
 
 type GenerateResponse = {
